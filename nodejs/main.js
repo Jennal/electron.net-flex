@@ -18,7 +18,7 @@ app.on('ready', () => {
 });
 
 function startServer() {
-    var srvPath = path.join(__dirname, "../bin/Debug/net5.0/electron.net-flex.exe");
+    var srvPath = path.join(__dirname, "../ElectronFlex/bin/Debug/net5.0/electron.net-flex.exe");
     if (path.basename(app.getAppPath()) == 'app.asar') {
         srvPath = path.join(path.dirname(app.getPath('exe')), "bin/electron.net-flex.exe");
     }

@@ -128,7 +128,7 @@
     },
     "extraFiles": [
       {
-        "from": "../bin/Release/net5.0/publish",
+        "from": "../ElectronFlex/bin/Release/net5.0/publish",
         "to": "bin",
         "filter": ["**/*"]
       }

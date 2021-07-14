@@ -1,85 +1,26 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using CommandLine;
-using WatsonWebserver;
 
-namespace TestRewriteConsole
-{
-        public class Options
-        {
-            [Option(longName: "webport", Required = true, HelpText = "Web port")]
-            public int WebPort { get; set; }
-            
-            [Option(longName: "wsport", Required = true, HelpText = "Web socket port")]
-            public int WebSocketPort { get; set; }
-        }
-
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            var webPort = 0;
-            var wsPort = 0;
-            Parser.Default.ParseArguments<Options>(args)
-                .WithParsed<Options>(o =>
-                {
-                    webPort = o.WebPort;
-                    wsPort = o.WebSocketPort;
-                });
-            
-            Console.WriteLine($"wp={webPort}, wsp={wsPort}");
-            var s = new Server("127.0.0.1", webPort, false, DefaultRoute);
-
-            // add content routes
-            s.Routes.Content.Add("/wwwroot/", true);
-
-            // add static routes
-            s.Routes.Static.Add(HttpMethod.GET, "/hello/", GetHelloRoute);
-
-            // start the server
-            s.Start();
-            Console.WriteLine($"Web Server Started => 127.0.0.1:{webPort}");
-            
-            Console.SetOut(new CustomTextWriter(Console.OpenStandardOutput())
-            {
-                AutoFlush = true
-            });
-            Console.WriteLine("Hello World!");
-            Console.Write("$$$console.log('direct call from cs');\n");
-
-            var line="";
-            do
-            {
-                line = Console.ReadLine();
-                Console.WriteLine($"NodeJs: {line}");
-            } while (line != "exit");
-        }
-        
-        static async Task GetHelloRoute(HttpContext ctx)
-        { 
-            await ctx.Response.Send("Hello from the GET /hello static route!");
-        }
-        
-        static async Task DefaultRoute(HttpContext ctx)
-        { 
-            await ctx.Response.Send("Hello from the default route!");
-        }
-    }
-
-    class CustomTextWriter : StreamWriter
+namespace ElectronFlex {
+    class ElectronTextWriter : StreamWriter
     {
         public override Encoding Encoding => Encoding.UTF8;
 
-        public CustomTextWriter(Stream stream): base(stream, Encoding.UTF8.RemovePreamble(), 256, true)
+        public ElectronTextWriter(Stream stream): base(stream, Encoding.UTF8.RemovePreamble(), 256, true)
         {
         }
 
         public override void WriteLine(string? value)
         {
-            base.WriteLine("[B] " + value);
+            if (Config.CommandLineOptions.StartFromElectron)
+            {
+                NodeJs.WriteLine(value);
+            }
+            else
+            {
+                base.WriteLine(value);
+            }
         }
     }
     
