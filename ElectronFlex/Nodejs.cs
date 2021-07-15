@@ -54,15 +54,18 @@ namespace ElectronFlex
             return pack;
         }
     }
-    
+
+    class IgnoreReturn
+    {}
+
     public static class NodeJs
     {
         private static IdGenerator s_idGenerator = new IdGenerator();
         public static ConcurrentDictionary<byte, object> s_dict = new ConcurrentDictionary<byte, object>();
         
-        public static void Invoke(string jsCode)
+        public static Task Invoke(string jsCode)
         {
-            Invoke<object>(jsCode);
+            return Invoke<IgnoreReturn>(jsCode);
         }
         
         public static Task<T> Invoke<T>(string jsCode)
@@ -75,6 +78,7 @@ namespace ElectronFlex
             
             var pack = new NodePack
             {
+                Id = s_idGenerator.Next(),
                 Type = NodePackType.InvokeCode,
                 Content = jsCode
             };
@@ -124,6 +128,7 @@ namespace ElectronFlex
             line = line?.TrimEnd('\r');
             var pack = new NodePack
             {
+                Id = s_idGenerator.Next(),
                 Type = NodePackType.ConsoleOutput,
                 Content = line
             };

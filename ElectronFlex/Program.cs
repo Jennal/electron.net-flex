@@ -16,6 +16,10 @@ namespace ElectronFlex
                 {
                     Config.CommandLineOptions = o;
                 });
+            Console.SetOut(new ElectronTextWriter(Console.OpenStandardOutput())
+            {
+                AutoFlush = true
+            });
             
             Console.WriteLine($"wp={Config.CommandLineOptions.WebPort}, wsp={Config.CommandLineOptions.WebSocketPort}");
             var s = new Server("127.0.0.1", Config.CommandLineOptions.WebPort, false, DefaultRoute);
@@ -27,20 +31,11 @@ namespace ElectronFlex
             s.Start();
             Console.WriteLine($"Web Server Started => 127.0.0.1:{Config.CommandLineOptions.WebPort}");
             
-            Console.SetOut(new ElectronTextWriter(Console.OpenStandardOutput())
-            {
-                AutoFlush = true
-            });
             Console.WriteLine("Hello World!");
             NodeJs.WriteLine("Hello");
-            Console.Write("$$$console.log('direct call from cs');\n");
+            NodeJs.Invoke("console.log('direct call from cs');");
 
-            var line="";
-            do
-            {
-                line = Console.ReadLine();
-                Console.WriteLine($"NodeJs: {line}");
-            } while (line != "exit");
+            NodeJs.Loop();
         }
         
         static async Task DefaultRoute(HttpContext ctx)

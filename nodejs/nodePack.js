@@ -24,7 +24,7 @@ NodePack.prototype.Encode = function() {
 NodePack.Decode = function(buff) {
     var roffset = buff.roffset || 0;
     var length = buff.readInt32();
-    if (length <= 0 || length > buff.woffset - buff.roffset) {
+    if (!length || length <= 0 || length > buff.woffset - buff.roffset) {
         buff.roffset = roffset;
         return null;
     }

@@ -4,6 +4,7 @@ const portscanner = require('portscanner');
 const path = require('path');
 const { dosDateTimeToDate } = require('yauzl');
 require('./bufferExtension')(Buffer)
+const { NodePack, NodePackType } = require("./nodePack")
 
 app.on('ready', () => {
     startServer();
@@ -20,12 +21,13 @@ app.on('ready', () => {
 });
 
 function startServer() {
-    var srvPath = path.join(__dirname, "../ElectronFlex/bin/Debug/net5.0/electron.net-flex.exe");
+    var srvPath = path.join(__dirname, "../ElectronFlex/bin/Debug/net5.0/ElectronFlex.exe");
     if (path.basename(app.getAppPath()) == 'app.asar') {
-        srvPath = path.join(path.dirname(app.getPath('exe')), "bin/electron.net-flex.exe");
+        srvPath = path.join(path.dirname(app.getPath('exe')), "bin/ElectronFlex.exe");
     }
 
     let child = spawn(srvPath, [
+        "--electron",
         "--webport=8000",
         "--wsport=8001"
     ]);
@@ -34,9 +36,34 @@ function startServer() {
 
     // child.stdout.setEncoding('utf8');
     child.stdout.on('data', data => {
-        console.log('data', data);
+        // console.log('data', data, data.toString('utf8'));
         buff = buff.writeBytes(data);
-        console.log('buff', buff);
+        // console.log('buff', buff);
+
+        var pack = NodePack.Decode(buff);
+        // console.log("pack", pack);
+        while (pack) {
+            switch (pack.Type) {
+                case NodePackType.ConsoleOutput:
+                    console.log("CS WriteLine: " + pack.Content);
+                    break;
+                case NodePackType.InvokeCode:
+                    console.log("CS Invoke: " + pack.Content);
+                    var result = eval(pack.Content);
+                    var json = JSON.stringify(result);
+                    json = json === undefined ? 'null' : json;
+                    console.log("Invoke Result: " + json);
+                    var retPack = new NodePack(pack.Id, NodePackType.InvokeResult, json);
+        
+                    child.stdin.cork();
+                    child.stdin.write(retPack.Encode());
+                    child.stdin.uncork();
+                    break;
+            }
+
+            pack = NodePack.Decode(buff);
+            // console.log("pack", pack);
+        }
 
         // let lines = data.split("\n");
         // lines.forEach(line => {
@@ -54,8 +81,8 @@ function startServer() {
         // });
     });
 
-    child.stdin.setEncoding('utf8');
-    child.stdin.cork();
-    child.stdin.write("Hello cs!\n");
-    child.stdin.uncork();
+    // child.stdin.setEncoding('utf8');
+    // child.stdin.cork();
+    // child.stdin.write("Hello cs!\n");
+    // child.stdin.uncork();
 }
