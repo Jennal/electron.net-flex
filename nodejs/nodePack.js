@@ -29,7 +29,10 @@ NodePack.Decode = function(buff) {
         return null;
     }
 
-    return new NodePack(buff.readUint8(), buff.readUint8(), buff.readString());
+    var result = new NodePack(buff.readUint8(), buff.readUint8(), buff.readString());
+    buff.clearRead();
+
+    return result;
 }
 
 module.exports = {
