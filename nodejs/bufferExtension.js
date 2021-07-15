@@ -56,6 +56,7 @@ function extension(Buffer) {
 
     Buffer.prototype.writeBytes = function (data) {
         if (!data || !data.length) return this;
+        if (Array.isArray(data)) data = Buffer.from(data);
 
         var buff = this.checkAlloc(data.length);
         data.copy(buff, this.woffset, 0, data.length);
@@ -108,6 +109,8 @@ function extension(Buffer) {
         if (this.roffset + len > this.woffset) return undefined;
 
         var bytes = this.slice(this.roffset, this.roffset + len);
+        bytes.roffset = 0;
+        bytes.woffset = bytes.length;
         // console.log(bytes, bytes.length, len);
         this.roffset += len;
         return bytes;
@@ -116,7 +119,7 @@ function extension(Buffer) {
     Buffer.prototype.readString = function () {
         this.roffset = this.roffset || 0;
         var len = this.readInt32();
-        if (len <= 0) return undefined;
+        if (!len || len <= 0) return undefined;
 
         var bytes = this.readBytes(len);
         if (bytes == undefined) {
@@ -136,6 +139,20 @@ function extension(Buffer) {
         
         return this;
     }
+
+    Buffer.prototype.toArray = function() {
+        this.woffset = this.woffset || 0;
+        this.roffset = this.roffset || 0;
+        let length = this.woffset - this.roffset;
+        if (length <= 0) return [];
+
+        let arr = new Array(this.woffset-this.roffset);
+        for (let i=this.roffset; i<this.woffset; i++)
+        {
+            arr[i] = this[i];
+        }
+        return arr;
+    }
 }
 
 module.exports = extension;
@@ -148,6 +165,7 @@ module.exports = extension;
 // test.writeUint32(3);
 // test.writeInt32(-1);
 // console.log(test);
+// console.log(test.toArray());
 
 // console.log(test.readUint8());
 // console.log(test.readUint16());

@@ -1,6 +1,7 @@
 {
   "devDependencies": {
-    "electron": "^13.1.6"
+    "electron": "^13.1.6",
+    "jest": "^27.0.6"
   },
   "name": "electron.net-flex-demo",
   "version": "1.0.0",
@@ -115,6 +116,7 @@
   },
   "scripts": {
     "start": "electron .",
+    "test": "jest",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
@@ -130,7 +132,9 @@
       {
         "from": "../ElectronFlex/bin/Release/net5.0/publish",
         "to": "bin",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ]
   }
