@@ -1,7 +1,9 @@
 #!/bin/sh
 cd ElectronFlex
 dotnet publish -c Release
-cd ../nodejs
+cd -
+cp -rf wwwroot ElectronFlex/bin/Release/net5.0/publish/
+cd nodejs
 electron-builder
 cd ..
 mkdir -p build

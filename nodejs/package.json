@@ -1,6 +1,7 @@
 {
   "devDependencies": {
-    "electron": "^13.1.6"
+    "electron": "^13.1.6",
+    "electron-builder": "^22.11.7"
   },
   "name": "electron.net-flex-demo",
   "version": "1.0.0",
@@ -9,7 +10,7 @@
     "start": "electron .",
     "test": "jest",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "publish": "electron-builder"
   },
   "author": "",
   "license": "ISC",
