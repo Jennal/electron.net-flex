@@ -108,8 +108,7 @@ namespace ElectronFlex
             var setResultMethod = typeof(TaskCompletionSource<>).MakeGenericType(resultType)
                 .GetMethod(nameof(TaskCompletionSource.SetResult));
 
-            var jsonConvertMethod = typeof(JsonConvert).GetMethod("DeserializeObject")!
-                .MakeGenericMethod(resultType);
+            var jsonConvertMethod = typeof(JsonConvert).GetGenericMethod(nameof(JsonConvert.DeserializeObject), new[] {resultType}, typeof(string));
             var result = jsonConvertMethod.Invoke(null, new object?[] {pack.Content});
             setResultMethod!.Invoke(obj, new[] {result});
         }
