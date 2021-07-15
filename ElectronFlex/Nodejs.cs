@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -26,11 +27,12 @@ namespace ElectronFlex
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
             
-            var len = 2 + Content.Length;
-            bw.Write(len);
-            bw.Write(Id);
+            var len = 6 + Content.Length;
+            bw.Write((int)len);
+            bw.Write((byte)Id);
             bw.Write((byte)Type);
-            bw.Write(Content);
+            bw.Write((int)Content.Length);
+            bw.Write(Encoding.UTF8.GetBytes(Content));
             bw.Flush();
 
             return ms.ToArray();
@@ -41,12 +43,17 @@ namespace ElectronFlex
             using var ms = new MemoryStream(data);
             using var br = new BinaryReader(ms);
 
-            return new NodePack
+            var pack = new NodePack
             {
                 Id = br.ReadByte(),
                 Type = (NodePackType)br.ReadByte(),
-                Content = br.ReadString()
             };
+
+            var length = br.ReadInt32();
+            var content = br.ReadBytes(length);
+            pack.Content = Encoding.UTF8.GetString(content);
+            
+            return pack;
         }
     }
     
