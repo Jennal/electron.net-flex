@@ -2,6 +2,8 @@ const { app, BrowserWindow, protocol } = require('electron');
 const { spawn } = require('child_process');
 const portscanner = require('portscanner');
 const path = require('path');
+const { dosDateTimeToDate } = require('yauzl');
+require('./bufferExtension')(Buffer)
 
 app.on('ready', () => {
     startServer();
@@ -27,22 +29,29 @@ function startServer() {
         "--webport=8000",
         "--wsport=8001"
     ]);
-    child.stdout.setEncoding('utf8');
-    child.stdout.on('data', data => {
-        let lines = data.split("\n");
-        lines.forEach(line => {
-            if (line == '') return;
 
-            if (line.startsWith("$$$")) {
-                line = line.substring(3);
-                console.log("cs eval: " + line);
-                eval(line);
-            }
-            else
-            {
-                console.log("CS-OUT: " + line);
-            } 
-        });
+    let buff = Buffer.alloc(128*1024); //128k
+
+    // child.stdout.setEncoding('utf8');
+    child.stdout.on('data', data => {
+        console.log('data', data);
+        buff = buff.writeBytes(data);
+        console.log('buff', buff);
+
+        // let lines = data.split("\n");
+        // lines.forEach(line => {
+        //     if (line == '') return;
+
+        //     if (line.startsWith("$$$")) {
+        //         line = line.substring(3);
+        //         console.log("cs eval: " + line);
+        //         eval(line);
+        //     }
+        //     else
+        //     {
+        //         console.log("CS-OUT: " + line);
+        //     } 
+        // });
     });
 
     child.stdin.setEncoding('utf8');
