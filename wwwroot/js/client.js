@@ -485,19 +485,18 @@
     }
 
     client.onInvoke = function (pack) {
-        console.log("onInvke", pack);
-        var encoder = GetEncoder();
+        // console.log("onInvke", pack);
         var result = eval(pack.Content);
         result = result === undefined ? null : result;
         client.send({
             "Id": pack.Id,
             "Type": pkg.InvokeResult,
-            "Content": encoder.encode(result)
+            "Content": JSON.stringify(result)
         });
     }
 
     client.onResult = function (pack) {
-        console.log("onResult", pack);
+        // console.log("onResult", pack);
         var data = JSON.parse(pack.Content);
         client.emit(client.getCallbackKey(pack.Id), data);
     }
@@ -508,7 +507,7 @@
 
     client.invoke = function(cls, method) {
         var args = [];
-        if (arguments.length > 2) args = arguments.slice(2);
+        if (arguments.length > 2) args = [].slice.call(arguments, 2);
 
         var encoder = GetEncoder();
         client.idGen = client.idGen || new IdGen(255);
@@ -521,8 +520,9 @@
         pack = {
             "Id": client.idGen.next(),
             "Type": pkg.InvokeCode,
-            "Content": encoder.encode(pack)
+            "Content": JSON.stringify(pack)
         };
+        // console.log('invoke', pack);
         client.send(pack);
 
         return new Promise(function(resolve, reject) {
