@@ -2,21 +2,8 @@
     /* defines */
     var client = {};
     var pkg = {
-        "PKG_NOTIFY"              : 0x00,
-        "PKG_REQUEST"             : 0x01,
-        "PKG_RESPONSE"            : 0x02,
-        "PKG_PUSH"                : 0x03,
-        "PKG_HEARTBEAT"           : 0x04,
-        "PKG_HEARTBEAT_RESPONSE"  : 0x05,
-        "PKG_HAND_SHAKE"          : 0x06,
-        "PKG_HAND_SHAKE_RESPONSE" : 0x07,
-
-        "STAT_OK"                : 0x00,
-        "STAT_ERR"               : 0x90,
-        "STAT_ERR_WRONG_PARAMS"  : 0x91,
-        "STAT_ERR_DECODE_FAILED" : 0x92,
-        "STAT_ERR_TIMEOUT"       : 0x93,
-        "STAT_ERR_EMPTY_RESULT"  : 0x94
+        "InvokeCode"              : 0x01,
+        "InvokeResult"             : 0x02
     };
     var events = {
         "CONNECTED"    : "__ON_CONNECTED",
@@ -132,17 +119,21 @@
 
     ByteArray.prototype.writeUint16 = function (val) {
         this.woffset = this.woffset || 0;
-        this[this.woffset++] = (val >> 8) & 0xff;
+        
         this[this.woffset++] = val & 0xff;
+        this[this.woffset++] = (val >> 8) & 0xff;
+
         return this;
     }
 
     ByteArray.prototype.writeUint32 = function (val) {
         this.woffset = this.woffset || 0;
-        this[this.woffset++] = (val >> 24) & 0xff;
-        this[this.woffset++] = (val >> 16) & 0xff;
-        this[this.woffset++] = (val >> 8) & 0xff;
+
         this[this.woffset++] = val & 0xff;
+        this[this.woffset++] = (val >> 8) & 0xff;
+        this[this.woffset++] = (val >> 16) & 0xff;
+        this[this.woffset++] = (val >> 24) & 0xff;
+        
         return this;
     }
 
@@ -180,19 +171,21 @@
     }
 
     ByteArray.prototype.readUint16 = function () {
-        var h = this.readUint8();
         var l = this.readUint8();
-        if (h == undefined || l == undefined) return undefined;
+        var h = this.readUint8();
+        if (h === undefined || l === undefined) return undefined;
 
         return h << 8 | l;
     }
 
     ByteArray.prototype.readUint32 = function () {
-        var h = this.readUint16();
-        var l = this.readUint16();
-        if (h == undefined || l == undefined) return undefined;
+        var b3 = this.readUint8();
+        var b2 = this.readUint8();
+        var b1 = this.readUint8();
+        var b0 = this.readUint8();
+        if (b0 === undefined || b1 === undefined || b2 === undefined || b3 === undefined) return undefined;
 
-        return h << 16 | l;
+        return b0 << 24 | b1 << 16 | b2 << 8 | b3;
     }
 
     ByteArray.prototype.readBytes = function (len) {
@@ -440,7 +433,7 @@
     /* ^^^^^^^ Event Emitter End ^^^^^^^ */
 
     client.connect = function (host, port) {
-        var url = "ws://" + host + ":" + port + "/ws";
+        var url = "ws://" + host + ":" + port;
         if (client.isConnected() && client.url == url) return;
 
         if (client.isConnected() && client.url != url) client.disconnect();
@@ -469,46 +462,41 @@
         return true;
     }
 
-    client.send = function (header, data) {
-        data = data || undefined;
-        // data = strencode(data);
-        // console.log("header:", header);
-        // console.log("data:", data);
-        // var strBuffer = strencode(data);
-        header.contentSize = data ? data.length : 0;
-        var bytes = header_encode(header);
-        // console.log("header_encode: ", bytes);
-        // console.log("header_decode: ", header_decode(bytes));
-        // bytes = copyArray(bytes, bytes.length, data, 0, data.length);
-        if (header.contentSize > 0) bytes = bytes.writeBytes(data);
-        //console.log("send:", bytes);
-        ws.send(bytes.buffer);
+    client.send = function (pack) {
+        if (!pack) return;
+
+        var data = new ByteArray(10+pack.Content.length);
+        data.writeUint32(data.length - 4);
+        data.writeUint8(pack.Id);
+        data.writeUint8(pack.Type);
+        data.writeUint32(pack.Content.length);
+        data.writeString(pack.Content);
+
+        console.log("send:", data);
+        ws.send(data.buffer);
     }
 
     client.recv = function () {
         if (!client.buffer || !client.buffer.length) return null;
 
-        var header = header_decode(client.buffer);
-        if (!client.buffer.hasReadSize(header.contentSize)) {
-            client.buffer.roffset -= header_size(header);
-            return null;
-        }
-
-        var data = new ByteArray(0);
-        if (header.contentSize > 0) data = client.buffer.readBytes(header.contentSize);
-
-        var start = header_size(header) + header.contentSize;
-        client.buffer = client.buffer.slice(start);
-
+        var size = client.buffer.readUint32();
+        console.log("size:", size);
+        if (!size) return null;
+        var data = client.buffer.readBytes(size);
+        var id = data.readUint8();
+        var type = data.readUint8();
+        var contentSize = data.readUint32();
+        var content = data.readString(contentSize);
+        console.log("recved:", id, type, contentSize, content);
         return {
-            "header": header,
-            "data": data
+            "Id": id,
+            "Type": type,
+            "Content": content
         };
     }
 
     client.onopen = function (event) {
         console.log("onopen", event)
-        client.sendHandshake();
     }
 
     client.onmessage = function (event) {
@@ -523,6 +511,17 @@
 
         var pack = client.recv();
         if (!pack) return;
+
+        switch (pack.Type) {
+            case pkg.InvokeCode:
+                console.log("InvokeCode", pack.Content);
+                break;
+            case pkg.InvokeResult:
+                console.log("InvokeResult", pack.Content);
+                break;
+        }
+
+        return;
 
         var header = pack.header;
         var data = pack.data;
@@ -638,10 +637,8 @@
     }
 
     client = Emitter(client);
-    client.info = info;
     client.pkg = pkg;
     client.events = events;
-    client.defaults = defaults;
 
     exports.Header = Header;
     exports.Emitter = Emitter;

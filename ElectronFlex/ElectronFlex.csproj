@@ -14,9 +14,7 @@
   </ItemGroup>
 
 <ItemGroup>
-  <Content Include="$(ProjectDir)..\wwwroot\**" 
-        CopyToOutputDirectory="PreserveNewest"
-        LinkBase="wwwroot\" />
+  <Content Include="$(ProjectDir)..\wwwroot\**" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot\" />
 </ItemGroup>
 
 </Project>

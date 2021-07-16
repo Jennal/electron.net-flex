@@ -1,62 +1,62 @@
-function extension(Buffer) {
-    Buffer.prototype.checkAlloc = function(size) {
+function extension(ByteArray) {
+    ByteArray.prototype.checkAlloc = function(size) {
         this.woffset = this.woffset || 0;
         var needed = this.woffset + size;
         if (this.length >= needed) return this;
 
-        var chunk = Math.max(Buffer.poolSize / 2, 1024);
+        var chunk = Math.max(ByteArray.poolSize / 2, 1024);
         var chunkCount = (needed / chunk) >>> 0;
         if ((needed % chunk) > 0) {
             chunkCount += 1;
         }
 
-        var buffer = Buffer.allocUnsafe(chunkCount * chunk);
+        var buffer = ByteArray.allocUnsafe(chunkCount * chunk);
         buffer.woffset = this.woffset;
         this.copy(buffer, 0, 0, this.woffset);
         return buffer;
     };
 
-    Buffer.prototype.writeUint8 = function (val) {
+    ByteArray.prototype.writeUint8 = function (val) {
         var buff = this.checkAlloc(1);
         buff.writeUInt8(val & 0xff, this.woffset);
         this.woffset++;
         return buff;
     }
 
-    Buffer.prototype.writeUint16 = function (val) {
+    ByteArray.prototype.writeUint16 = function (val) {
         var buff = this.checkAlloc(2);
         buff.writeUInt16LE(val & 0xffff, buff.woffset);
         buff.woffset += 2;
         return buff;
     }
 
-    Buffer.prototype.writeUint32 = function (val) {
+    ByteArray.prototype.writeUint32 = function (val) {
         var buff = this.checkAlloc(4);
         buff.writeUInt32LE(val, buff.woffset);
         buff.woffset += 4;
         return buff;
     }
 
-    Buffer.prototype.writeInt32 = function (val) {
+    ByteArray.prototype.writeInt32 = function (val) {
         var buff = this.checkAlloc(4);
         buff.writeInt32LE(val, buff.woffset);
         buff.woffset += 4;
         return buff;
     }
 
-    Buffer.prototype.writeString = function (val) {
+    ByteArray.prototype.writeString = function (val) {
         if (!val || val.length <= 0) return this;
 
-        var bytes = Buffer.from(val, 'utf8');
+        var bytes = ByteArray.from(val, 'utf8');
         var buff = this.checkAlloc(4 + bytes.length);
 
         buff.writeInt32(bytes.length);
         return buff.writeBytes(bytes);
     }
 
-    Buffer.prototype.writeBytes = function (data) {
+    ByteArray.prototype.writeBytes = function (data) {
         if (!data || !data.length) return this;
-        if (Array.isArray(data)) data = Buffer.from(data);
+        if (Array.isArray(data)) data = ByteArray.from(data);
 
         var buff = this.checkAlloc(data.length);
         data.copy(buff, this.woffset, 0, data.length);
@@ -64,13 +64,13 @@ function extension(Buffer) {
         return buff;
     }
 
-    Buffer.prototype.hasReadSize = function (len) {
+    ByteArray.prototype.hasReadSize = function (len) {
         this.woffset = this.woffset || 0;
         this.roffset = this.roffset || 0;
         return len <= this.woffset - this.roffset;
     }
 
-    Buffer.prototype.readUint8 = function () {
+    ByteArray.prototype.readUint8 = function () {
         if (!this.hasReadSize(1)) return undefined;
 
         var val = this.readUInt8(this.roffset);
@@ -78,7 +78,7 @@ function extension(Buffer) {
         return val;
     }
 
-    Buffer.prototype.readUint16 = function () {
+    ByteArray.prototype.readUint16 = function () {
         if (!this.hasReadSize(2)) return undefined;
 
         var val = this.readUInt16LE(this.roffset);
@@ -86,7 +86,7 @@ function extension(Buffer) {
         return val;
     }
 
-    Buffer.prototype.readUint32 = function () {
+    ByteArray.prototype.readUint32 = function () {
         if (!this.hasReadSize(4)) return undefined;
 
         var val = this.readUInt32LE(this.roffset);
@@ -94,7 +94,7 @@ function extension(Buffer) {
         return val;
     }
 
-    Buffer.prototype.readInt32 = function () {
+    ByteArray.prototype.readInt32 = function () {
         if (!this.hasReadSize(4)) return undefined;
 
         var val = this.readInt32LE(this.roffset);
@@ -102,7 +102,7 @@ function extension(Buffer) {
         return val;
     }
 
-    Buffer.prototype.readBytes = function (len) {
+    ByteArray.prototype.readBytes = function (len) {
         if (len <= 0) return undefined;
 
         this.roffset = this.roffset || 0;
@@ -116,7 +116,7 @@ function extension(Buffer) {
         return bytes;
     }
 
-    Buffer.prototype.readString = function () {
+    ByteArray.prototype.readString = function () {
         this.roffset = this.roffset || 0;
         var len = this.readInt32();
         if (!len || len <= 0) return undefined;
@@ -130,7 +130,7 @@ function extension(Buffer) {
         return bytes.toString('utf8');
     }
 
-    Buffer.prototype.clearRead = function() {
+    ByteArray.prototype.clearRead = function() {
         if (!this.roffset || !this.woffset) return;
 
         this.copy(this, 0, this.roffset, this.woffset);
@@ -140,7 +140,7 @@ function extension(Buffer) {
         return this;
     }
 
-    Buffer.prototype.toArray = function() {
+    ByteArray.prototype.toArray = function() {
         this.woffset = this.woffset || 0;
         this.roffset = this.roffset || 0;
         let length = this.woffset - this.roffset;

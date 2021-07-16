@@ -9,8 +9,7 @@
   "scripts": {
     "start": "electron .",
     "test": "jest",
-    "pack": "electron-builder --dir",
-    "publish": "electron-builder"
+    "pack": "electron-builder"
   },
   "author": "",
   "license": "ISC",
