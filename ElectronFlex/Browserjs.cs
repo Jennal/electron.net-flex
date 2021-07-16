@@ -1,12 +1,18 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace ElectronFlex
 {
+    public class BrowserInvoke
+    {
+        public string Class;
+        public string Method;
+        public object[] Arguments;
+    }
+    
     public static class BrowserJs
     {
         private static IdGenerator s_idGenerator = new IdGenerator();
@@ -51,12 +57,14 @@ namespace ElectronFlex
 
                 var packBuff = stream.ReadBytes(size);
                 var pack = NodePack.Decode(packBuff);
-                Console.WriteLine($"ws recv: {Newtonsoft.Json.JsonConvert.SerializeObject(pack)}");
+                Console.WriteLine($"ws recv: {JsonConvert.SerializeObject(pack)}");
 
                 switch (pack.Type)
                 {
                     case NodePackType.InvokeCode:
-                        //TODO:
+                        var invoke = JsonConvert.DeserializeObject<BrowserInvoke>(pack.Content);
+                        //TODO: find class & method & invoke
+                        
                         pack.Type = NodePackType.InvokeResult;
                         Send(pack);
                         break;
