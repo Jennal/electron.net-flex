@@ -31,9 +31,10 @@ namespace ElectronFlex
                 Type = NodePackType.InvokeCode,
                 Content = jsCode
             };
+            var task = s_taskManager.Invoke<T>(pack);
             Send(pack);
 
-            return s_taskManager.Invoke<T>(pack);
+            return task;
         }
 
         public static void Loop()
@@ -57,7 +58,7 @@ namespace ElectronFlex
 
                 var packBuff = stream.ReadBytes(size);
                 var pack = NodePack.Decode(packBuff);
-                Console.WriteLine($"ws recv: {JsonConvert.SerializeObject(pack)}");
+                Console.WriteLine($">>>>>>> WebSocket.Recv: {pack}");
 
                 switch (pack.Type)
                 {
@@ -91,6 +92,7 @@ namespace ElectronFlex
 
         private static void Send(NodePack pack)
         {
+            Console.WriteLine($"<<<<<<< WebSocket.Send: {pack}");
             var ipPort = Config.WebSocketServer.ListClients().FirstOrDefault();
             Config.WebSocketServer.SendAsync(ipPort, pack.Encode());
         }

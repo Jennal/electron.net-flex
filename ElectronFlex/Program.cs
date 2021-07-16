@@ -36,25 +36,9 @@ namespace ElectronFlex
             NodeJs.Loop();
         }
 
-        private static void StartWebSocket()
-        {
-            WatsonWsServer server = new WatsonWsServer("127.0.0.1", Config.CommandLineOptions.WebSocketPort);
-            server.MessageReceived += MessageReceived; 
-            server.Start();
-            Console.WriteLine($"Web Socket Started => 127.0.0.1:{Config.CommandLineOptions.WebSocketPort}");
-            
-            Config.WebSocketServer = server;
-        }
-
-        private static void MessageReceived(object? sender, MessageReceivedEventArgs e)
-        {
-            var stream = Config.WebSocketStream;
-            stream.WriteBytes(e.Data);
-        }
-
         private static void StartWebServer()
         {
-            var s = new Server("127.0.0.1", Config.CommandLineOptions.WebPort, false, DefaultRoute);
+            var s = new Server("127.0.0.1", Config.CommandLineOptions.WebPort, false, WebServerHandler.DefaultRoute);
 
             // add content routes
             s.Routes.Content.Add("/wwwroot/", true);
@@ -66,11 +50,16 @@ namespace ElectronFlex
             Config.WebServer = s;
         }
 
-        static async Task DefaultRoute(HttpContext ctx)
-        { 
-            await ctx.Response.Send("No content provided by this route");
+        private static void StartWebSocket()
+        {
+            WatsonWsServer server = new WatsonWsServer("127.0.0.1", Config.CommandLineOptions.WebSocketPort);
+            server.ClientConnected += WebSocketHandler.ClientConnected;
+            server.ClientDisconnected += WebSocketHandler.ClientDisconnected;
+            server.MessageReceived += WebSocketHandler.MessageReceived;
+            server.Start();
+            Console.WriteLine($"Web Socket Started => 127.0.0.1:{Config.CommandLineOptions.WebSocketPort}");
+            
+            Config.WebSocketServer = server;
         }
     }
-
-    
 }

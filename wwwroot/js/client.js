@@ -410,7 +410,7 @@
         data.writeUint32(pack.Content.length);
         data.writeString(pack.Content);
 
-        // console.log("send:", data);
+        console.log("send:", data);
         ws.send(data.buffer);
     }
 
@@ -455,6 +455,7 @@
         }
 
         var pack = client.recv();
+        // console.log("recv pack:", pack);
         while (pack) {
             switch (pack.Type) {
                 case pkg.ConsoleOutput:
@@ -485,8 +486,9 @@
     }
 
     client.onInvoke = function (pack) {
-        // console.log("onInvke", pack);
+        console.log("onInvke", pack);
         var result = eval(pack.Content);
+        console.log(pack.Content, result);
         result = result === undefined ? null : result;
         client.send({
             "Id": pack.Id,
@@ -496,7 +498,7 @@
     }
 
     client.onResult = function (pack) {
-        // console.log("onResult", pack);
+        console.log("onResult", pack);
         var data = JSON.parse(pack.Content);
         client.emit(client.getCallbackKey(pack.Id), data);
     }

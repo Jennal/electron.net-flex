@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace ElectronFlex
 {
@@ -50,6 +51,11 @@ namespace ElectronFlex
             pack.Content = Encoding.UTF8.GetString(content);
             
             return pack;
+        }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this);
         }
     }
 
