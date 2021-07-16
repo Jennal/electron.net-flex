@@ -13,10 +13,10 @@
     <PackageReference Include="WatsonWebsocket" Version="2.3.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="../wwwroot/**">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+<ItemGroup>
+  <Content Include="$(ProjectDir)..\wwwroot\**" 
+        CopyToOutputDirectory="PreserveNewest"
+        LinkBase="wwwroot\" />
+</ItemGroup>
 
 </Project>
