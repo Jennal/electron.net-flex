@@ -514,7 +514,7 @@
         var pack = {
             "Class": cls,
             "Method": method,
-            "Argurments": args
+            "Arguments": args
         };
 
         pack = {
