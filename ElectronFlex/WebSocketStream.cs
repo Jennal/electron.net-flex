@@ -15,12 +15,15 @@ namespace ElectronFlex
         private BinaryReader _reader;
         private BinaryWriter _writer;
 
+        public int BufferSize => _buffer.Length;
+        public long ContentSize => _writeStream.Seek(0, SeekOrigin.Current) - _readStream.Seek(0, SeekOrigin.Current);
+        
         public WebSocketStream()
         {
             SetBuffer(_buffer);
         }
 
-        private void SetBuffer(byte[] buffer)
+        public void SetBuffer(byte[] buffer)
         {
             _buffer = buffer;
         
@@ -41,7 +44,7 @@ namespace ElectronFlex
         {
             var rpos = _readStream.Seek(0, SeekOrigin.Current);
             var wpos = _writeStream.Seek(0, SeekOrigin.Current);
-            if (wpos + size < _buffer.Length) return;
+            if (wpos + size <= _buffer.Length) return;
 
             var newSize = Math.Max(INIT_SIZE, wpos + size - rpos);
             while (wpos + size - rpos >= newSize) newSize += CHUNK_SIZE;

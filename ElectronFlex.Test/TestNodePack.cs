@@ -2,7 +2,7 @@ using NUnit.Framework;
 
 namespace ElectronFlex.Test
 {
-    public class Tests
+    public class TestNodePack
     {
         [SetUp]
         public void Setup()
