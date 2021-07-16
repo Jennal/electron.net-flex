@@ -391,7 +391,6 @@
 
         if (ws.readyState <= 1) ws.close();
         ws = null;
-        client.emit(events.DISCONNECTED);
     }
 
     client.isConnected = function () {
@@ -481,7 +480,7 @@
 
     client.onclose = function (event) {
         console.log("onclose", event);
-        client.stopHeartbeat();
+        client.emit(events.DISCONNECTED, event);
         client.disconnect();
     }
 
