@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace ElectronFlex
 {
@@ -61,7 +59,7 @@ namespace ElectronFlex
     public static class NodeJs
     {
         private static IdGenerator s_idGenerator = new IdGenerator();
-        public static ConcurrentDictionary<byte, object> s_dict = new ConcurrentDictionary<byte, object>();
+        private static InvokeTaskManager s_taskManager = new InvokeTaskManager();
         
         public static Task Invoke(string jsCode)
         {
@@ -87,10 +85,7 @@ namespace ElectronFlex
             bw.Write(pack.Encode());
             bw.Flush();
 
-            var task = new TaskCompletionSource<T>();
-            s_dict[s_idGenerator.Next()] = task;
-            
-            return task.Task;
+            return s_taskManager.Invoke<T>(pack);
         }
 
         public static void Loop()
@@ -103,23 +98,8 @@ namespace ElectronFlex
                 var length = br.ReadInt32();
                 var data = br.ReadBytes(length);
                 var pack = NodePack.Decode(data);
-                ResolvePack(pack);
+                s_taskManager.Result(pack);
             }
-        }
-
-        public static void ResolvePack(NodePack pack)
-        {
-            if (pack.Type != NodePackType.InvokeResult) return;
-            if (!s_dict.TryRemove(pack.Id, out var obj)) return;
-            if (obj.GetType().GenericTypeArguments.Length <= 0) return;
-
-            var resultType = obj.GetType().GenericTypeArguments[0];
-            var setResultMethod = typeof(TaskCompletionSource<>).MakeGenericType(resultType)
-                .GetMethod(nameof(TaskCompletionSource.SetResult));
-
-            var jsonConvertMethod = typeof(JsonConvert).GetGenericMethod(nameof(JsonConvert.DeserializeObject), new[] {resultType}, typeof(string));
-            var result = jsonConvertMethod.Invoke(null, new object?[] {pack.Content});
-            setResultMethod!.Invoke(obj, new[] {result});
         }
 
         public static void WriteLine(string? line)

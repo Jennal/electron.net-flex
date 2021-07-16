@@ -31,7 +31,8 @@ namespace ElectronFlex
             Console.WriteLine("Hello World!");
             NodeJs.WriteLine("Hello");
             NodeJs.Invoke("console.log('direct call from cs');");
-            
+
+            Task.Run(BrowserJs.Loop);
             NodeJs.Loop();
         }
 
@@ -49,22 +50,6 @@ namespace ElectronFlex
         {
             var stream = Config.WebSocketStream;
             stream.WriteBytes(e.Data);
-
-            while (stream.HasSizeForRead(sizeof(int)))
-            {
-                var size = stream.ReadInt32();
-                if (!stream.HasSizeForRead(size))
-                {
-                    stream.UnReadInt32();
-                    break;
-                }
-
-                var packBuff = stream.ReadBytes(size);
-                var pack = NodePack.Decode(packBuff);
-                Console.WriteLine($"ws recv: {Newtonsoft.Json.JsonConvert.SerializeObject(pack)}");
-                pack.Content = $"srv: {pack.Content}";
-                Config.WebSocketServer.SendAsync(e.IpPort, pack.Encode());
-            }
         }
 
         private static void StartWebServer()

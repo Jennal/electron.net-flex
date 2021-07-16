@@ -2,8 +2,9 @@
     /* defines */
     var client = {};
     var pkg = {
-        "InvokeCode"              : 0x01,
-        "InvokeResult"             : 0x02
+        "ConsoleOutput" : 0x00,
+        "InvokeCode"    : 0x01,
+        "InvokeResult"  : 0x02
     };
     var events = {
         "CONNECTED"    : "__ON_CONNECTED",
@@ -151,19 +152,22 @@
     ByteArray.prototype.writeBytes = function (data) {
         if (!data || !data.length) return this;
 
-        var result = copyArray(this, this.length, data, 0, data.length);
+        var result = copyArray(this, this.woffset, data, 0, data.length);
+        this.woffset = this.woffset || 0;
+        result.roffset = this.roffset || 0;
         result.woffset = this.woffset + data.length;
         return result;
     }
 
     ByteArray.prototype.hasReadSize = function (len) {
         this.roffset = this.roffset || 0;
-        return len <= this.length - this.roffset;
+        this.woffset = this.woffset || this.length;
+        return len <= this.woffset - this.roffset;
     }
 
     ByteArray.prototype.readUint8 = function () {
         this.roffset = this.roffset || 0;
-        if (this.roffset + 1 > this.length) return undefined;
+        if (this.roffset + 1 > this.woffset) return undefined;
 
         var val = this[this.roffset] & 0xff;
         this.roffset += 1;
@@ -192,7 +196,7 @@
         if (len <= 0) return undefined;
 
         this.roffset = this.roffset || 0;
-        if (this.roffset + len > this.length) return undefined;
+        if (this.roffset + len > this.woffset) return undefined;
 
         var bytes = this.slice(this.roffset, this.roffset + len);
         // console.log(bytes, bytes.length, len);
@@ -205,6 +209,12 @@
         if (bytes == undefined) return "";
 
         return strdecode(bytes);
+    }
+
+    ByteArray.prototype.clearRead = function() {
+        copyArray(this, 0, this, this.roffset, this.woffset-this.roffset);
+        this.woffset = this.woffset - this.roffset;
+        this.roffset = 0;
     }
     /* ^^^^^^ Utility Functions End ^^^^^^ */
 
@@ -222,81 +232,10 @@
         }
     };
 
-    var protobufEncoder = {
-        "encode": function(obj) {
-            if(obj == undefined) return obj;
-
-            if (!obj.constructor || !obj.constructor.encode) throw new Error("not a protobuf object!");
-            // console.log(obj.constructor.name, obj, t);
-            return obj.constructor.encode(obj).finish();
-        },
-        "decode": function(buffer) {
-            return buffer;
-        }
-    };
-
     function GetEncoder() {
         return jsonEncoder;
     }
     /* ^^^^^^ Encoder End ^^^^^^ */
-
-    /* vvvvvv Header Start vvvvvv */
-    function Header(type, id, status, contentSize, route) {
-        this.type = type;
-        this.id = id;
-        this.status = status;
-        this.contentSize = contentSize;
-        this.route = route;
-
-        return this;
-    }
-
-    function header_size(header) {
-        var size = 5; /* static size */
-        size += (1 + header.route.length);
-
-        return size;
-    }
-
-    function header_encode(header) {
-        var bytes = new ByteArray(header_size(header));
-
-        bytes = bytes.writeUint8(header.type)
-            .writeUint8(header.id)
-            .writeUint8(header.status)
-            .writeUint16(header.contentSize);
-        
-        if ( ! header_can_encode_route(header)) {
-            bytes = bytes.writeUint8(header.route.length)
-                         .writeString(header.route);
-        } else {
-            var routeEncoded = client.getRouteEncoded(header.route);
-            bytes = bytes.writeUint16(routeEncoded);
-        }
-
-        return bytes;
-    }
-
-    function header_decode(bytes) {
-        var header = new Header();
-
-        header.type = bytes.readUint8();
-        header.id = bytes.readUint8();
-        header.status = bytes.readUint8();
-        header.contentSize = bytes.readUint16();
-
-        if ( ! header_can_encode_route(header)) {
-            var routeLen = bytes.readUint8();
-            // console.log(routeLen);
-            header.route = bytes.readString(routeLen);
-        } else {
-            var routeEncoded = bytes.readUint16();
-            header.route = client.getRoute(routeEncoded);
-        }
-
-        return header;
-    }
-    /* ^^^^^^ Header End ^^^^^^ */
 
     /* vvvvvv Event Emitter Start vvvvvv */
     function Emitter(obj) {
@@ -472,7 +411,7 @@
         data.writeUint32(pack.Content.length);
         data.writeString(pack.Content);
 
-        console.log("send:", data);
+        // console.log("send:", data);
         ws.send(data.buffer);
     }
 
@@ -480,14 +419,21 @@
         if (!client.buffer || !client.buffer.length) return null;
 
         var size = client.buffer.readUint32();
-        console.log("size:", size);
+        // console.log("size:", size);
         if (!size) return null;
+        if (!client.buffer.hasReadSize(size)) {
+            client.buffer.roffset -= 4;
+            return null;
+        }
+
         var data = client.buffer.readBytes(size);
         var id = data.readUint8();
         var type = data.readUint8();
         var contentSize = data.readUint32();
         var content = data.readString(contentSize);
-        console.log("recved:", id, type, contentSize, content);
+
+        client.buffer.clearRead();
+        // console.log("recved:", id, type, contentSize, content);
         return {
             "Id": id,
             "Type": type,
@@ -510,41 +456,21 @@
         }
 
         var pack = client.recv();
-        if (!pack) return;
+        while (pack) {
+            switch (pack.Type) {
+                case pkg.ConsoleOutput:
+                    console.log('CS: ' + pack.Content);
+                    break;
+                case pkg.InvokeCode:
+                    client.onInvoke(pack);
+                    break;
+                case pkg.InvokeResult:
+                    client.onResult(pack);
+                    break;
+            }
 
-        switch (pack.Type) {
-            case pkg.InvokeCode:
-                console.log("InvokeCode", pack.Content);
-                break;
-            case pkg.InvokeResult:
-                console.log("InvokeResult", pack.Content);
-                break;
-        }
-
-        return;
-
-        var header = pack.header;
-        var data = pack.data;
-        if (header.contentSize > 0) {
-            var encoder = GetEncoder();
-            data = encoder.decode(pack.data);
-        }
-        if (header.type != pkg.PKG_HEARTBEAT && header.type != pkg.PKG_HEARTBEAT_RESPONSE) {
-            console.log("Recv: ", header, data);
-        }
-        switch (header.type) {
-            case pkg.PKG_REQUEST:
-                client.onRequest(header, data);
-                break;
-            case pkg.PKG_RESPONSE:
-                client.onResponse(header, data);
-                break;
-            case pkg.PKG_PUSH:
-                client.onPush(header, data);
-                break;
-            default:
-                console.log("should not be here!!", header, data);
-                break;
+            pack = client.recv();
+            if (!pack) return;
         }
     }
 
@@ -559,88 +485,57 @@
         client.disconnect();
     }
 
-    client.onRequest = function (header, data) {
-        console.log("key: ", client.getCallbackKey(header));
-        console.log("onRequest: ", header, data);
-        //TOOD: eval...
-    }
-
-    client.onResponse = function (header, data) {
-        console.log("key: ", client.getCallbackKey(header));
-        console.log("onResponse: ", header, data);
-        client.emit(client.getCallbackKey(header), header.status, data);
-    }
-
-    client.onPush = function (header, data) {
-        client.emit(header.route, data);
-    }
-
-    client.getCallbackKey = function (header) {
-        return header.route + "-" + header.id;
-    }
-
-    //arguments[4] => route, data, successCb, failCb
-    //arguments[3] => route, successCb, failCb
-    client.request = function () {
-        client.idGen = client.idGen || new IdGen(255);
-        var route, data, successCb, failCb;
-        if(arguments.length == 4) {
-            route = arguments[0];
-            data = arguments[1];
-            successCb = arguments[2];
-            failCb = arguments[3];
-        } else if(arguments.length == 3) {
-            route = arguments[0];
-            successCb = arguments[1];
-            failCb = arguments[2];
-        } else {
-            throw new Error("arguments length not valid!");
-        }
-
-        var header = new Header(pkg.PKG_REQUEST, client.idGen.next(), pkg.STAT_OK, 0, route);
+    client.onInvoke = function (pack) {
+        console.log("onInvke", pack);
         var encoder = GetEncoder();
-        data = encoder.encode(data);
-
-        var key = client.getCallbackKey(header);
-        // console.log("key: ", key);
-        client.once(key, function (status, data) {
-            if (status == pkg.STAT_OK) {
-                successCb(data);
-            } else {
-                if (isProtobuf()) data = pb.ErrorMessage.decode(data);
-                failCb(data);
-            }
+        var result = eval(pack.Content);
+        result = result === undefined ? null : result;
+        client.send({
+            "Id": pack.Id,
+            "Type": pkg.InvokeResult,
+            "Content": encoder.encode(result)
         });
-
-        client.send(header, data);
     }
 
-    //arguments[2] => route, data
-    //arguments[1] => route
-    client.notify = function () {
-        client.idGen = client.idGen || new IdGen(255);
-        var route, data;
-        if(arguments.length == 2) {
-            route = arguments[0];
-            data = arguments[1];
-        } else if(arguments.length == 1) {
-            route = arguments[0];
-        } else {
-            throw new Error("arguments length not valid!");
-        }
+    client.onResult = function (pack) {
+        console.log("onResult", pack);
+        var data = JSON.parse(pack.Content);
+        client.emit(client.getCallbackKey(pack.Id), data);
+    }
 
-        var header = new Header(pkg.PKG_NOTIFY, client.idGen.next(), pkg.STAT_OK, 0, route);
+    client.getCallbackKey = function (id) {
+        return "invoke-" + id;
+    }
+
+    client.invoke = function(cls, method) {
+        var args = [];
+        if (arguments.length > 2) args = arguments.slice(2);
+
         var encoder = GetEncoder();
-        data = encoder.encode(data);
+        client.idGen = client.idGen || new IdGen(255);
+        var pack = {
+            "Class": cls,
+            "Method": method,
+            "Argurments": args
+        };
 
-        client.send(header, data);
+        pack = {
+            "Id": client.idGen.next(),
+            "Type": pkg.InvokeCode,
+            "Content": encoder.encode(pack)
+        };
+        client.send(pack);
+
+        return new Promise(function(resolve, reject) {
+            var id = pack.Id;
+            client.once(client.getCallbackKey(id), resolve);
+        });
     }
 
     client = Emitter(client);
     client.pkg = pkg;
     client.events = events;
 
-    exports.Header = Header;
     exports.Emitter = Emitter;
     exports.client = client;
 })(

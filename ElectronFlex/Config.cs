@@ -11,5 +11,7 @@ namespace ElectronFlex
         public static WatsonWsServer WebSocketServer;
         
         public static WebSocketStream WebSocketStream = new WebSocketStream();
+
+        public static string WebSocketClientIpPort;
     }
 }
