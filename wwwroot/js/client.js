@@ -442,6 +442,7 @@
 
     client.onopen = function (event) {
         console.log("onopen", event)
+        client.emit(events.CONNECTED, event);
     }
 
     client.onmessage = function (event) {
