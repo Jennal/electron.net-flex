@@ -8,16 +8,16 @@ namespace ElectronFlex
     {
         public ConcurrentDictionary<byte, object> _dict = new ConcurrentDictionary<byte, object>();
 
-        public Task<T> Invoke<T>(NodePack pack)
+        public Task<T> Invoke<T>(Pack pack)
         {
             var task = new TaskCompletionSource<T>();
             _dict[pack.Id] = task;
             return task.Task;
         }
 
-        public void Result(NodePack pack)
+        public void Result(Pack pack)
         {
-            if (pack.Type != NodePackType.InvokeResult) return;
+            if (pack.Type != PackType.InvokeResult) return;
             if (!_dict.TryRemove(pack.Id, out var obj)) return;
             if (obj.GetType().GenericTypeArguments.Length <= 0) return;
 

@@ -1,64 +1,9 @@
 using System;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace ElectronFlex
 {
-    public enum NodePackType : byte
-    {
-        ConsoleOutput = 0,
-        InvokeCode = 1,
-        InvokeResult = 2,
-    }
-    
-    public struct NodePack
-    {
-        public byte Id;
-        public NodePackType Type;
-        public string Content;
-
-        public byte[] Encode()
-        {
-            using var ms = new MemoryStream();
-            using var bw = new BinaryWriter(ms);
-            
-            var len = 6 + Content.Length;
-            bw.Write((int)len);
-            bw.Write((byte)Id);
-            bw.Write((byte)Type);
-            bw.Write((int)Content.Length);
-            bw.Write(Encoding.UTF8.GetBytes(Content));
-            bw.Flush();
-
-            return ms.ToArray();
-        }
-
-        public static NodePack Decode(byte[] data)
-        {
-            using var ms = new MemoryStream(data);
-            using var br = new BinaryReader(ms);
-
-            var pack = new NodePack
-            {
-                Id = br.ReadByte(),
-                Type = (NodePackType)br.ReadByte(),
-            };
-
-            var length = br.ReadInt32();
-            var content = br.ReadBytes(length);
-            pack.Content = Encoding.UTF8.GetString(content);
-            
-            return pack;
-        }
-
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
-    }
-
     class IgnoreReturn
     {}
 
@@ -80,10 +25,10 @@ namespace ElectronFlex
                 return default;
             }
             
-            var pack = new NodePack
+            var pack = new Pack
             {
                 Id = s_idGenerator.Next(),
-                Type = NodePackType.InvokeCode,
+                Type = PackType.InvokeCode,
                 Content = jsCode
             };
 
@@ -103,7 +48,7 @@ namespace ElectronFlex
             {
                 var length = br.ReadInt32();
                 var data = br.ReadBytes(length);
-                var pack = NodePack.Decode(data);
+                var pack = Pack.Decode(data);
                 s_taskManager.Result(pack);
             }
         }
@@ -112,10 +57,10 @@ namespace ElectronFlex
         {
             line = line?.TrimEnd('\n');
             line = line?.TrimEnd('\r');
-            var pack = new NodePack
+            var pack = new Pack
             {
                 Id = s_idGenerator.Next(),
-                Type = NodePackType.ConsoleOutput,
+                Type = PackType.ConsoleOutput,
                 Content = line
             };
 

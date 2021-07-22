@@ -32,8 +32,8 @@ namespace ElectronFlex
             NodeJs.WriteLine("Hello");
             NodeJs.Invoke("console.log('direct call from cs');");
 
-            Task.Run(BrowserJs.Loop);
-            NodeJs.Loop();
+            Task.Run(NodeJs.Loop);
+            BrowserJs.Loop();
         }
 
         private static void StartWebServer()

@@ -9,12 +9,12 @@ namespace ElectronFlex
     {
         public static void ClientConnected(object? sender, ClientConnectedEventArgs e)
         {
-            Task.Run(() =>
-            {
-                var task = BrowserJs.Invoke<int>("Math.abs(-1)");
-                task.Wait();
-                Console.WriteLine($"js result: {task.Result}");
-            });
+            // Task.Run(() =>
+            // {
+            //     var task = BrowserJs.Invoke<int>("Math.abs(-1)");
+            //     task.Wait();
+            //     Console.WriteLine($"js result: {task.Result}");
+            // });
         }
 
         public static void ClientDisconnected(object? sender, ClientDisconnectedEventArgs e)
@@ -25,7 +25,7 @@ namespace ElectronFlex
         {
             var stream = Config.WebSocketStream;
             stream.WriteBytes(e.Data);
-            Console.WriteLine($"Recv: {e.Data.ToJson()}");
+            // Console.WriteLine($"Recv: {e.Data.ToJson()}");
         }
     }
 }

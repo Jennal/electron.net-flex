@@ -460,7 +460,7 @@
         while (pack) {
             switch (pack.Type) {
                 case pkg.ConsoleOutput:
-                    console.log('CS: ' + pack.Content);
+                    console.log('[CS] ' + pack.Content);
                     break;
                 case pkg.InvokeCode:
                     client.onInvoke(pack);
@@ -501,6 +501,8 @@
     client.onResult = function (pack) {
         console.log("onResult", pack);
         var data = JSON.parse(pack.Content);
+        if (data && data.err) console.error(data.err);
+
         client.emit(client.getCallbackKey(pack.Id), data);
     }
 

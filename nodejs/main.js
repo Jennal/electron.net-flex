@@ -6,6 +6,8 @@ const { dosDateTimeToDate } = require('yauzl');
 require('./bufferExtension')(Buffer)
 const { NodePack, NodePackType } = require("./nodePack")
 
+//TOOD: find free port, and set to c# server/browser
+
 app.on('ready', () => {
     startServer();
     let win = new BrowserWindow({
@@ -15,6 +17,11 @@ app.on('ready', () => {
         show: false
     });
     win.loadURL('http://localhost:8000/wwwroot/index.html');
+
+    win.webContents.on('did-finish-load', function() {
+        win.webContents.executeJavaScript("client.connect('localhost', 8001);");
+    });
+
     win.once('ready-to-show', () => {
         win.show();
     });
