@@ -1,4 +1,4 @@
 #!/bin/sh
 cd nodejs
-npm i
+npm install --save-dev
 cd -
