@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json.schemastore.org/template",
+    "author": "Jennal",
+    "classifications": [ "Desktop", "Electron" ],
+    "identity": "ElectronFlex.Project",
+    "name": "Electron Flex Project",
+    "shortName": "electron-flex",
+    "tags": {
+      "language": "C#",
+      "type": "project"
+    }
+  }
