@@ -8,5 +8,28 @@
     "tags": {
       "language": "C#",
       "type": "project"
-    }
+    },
+    "sources": [{
+      "source": "./",
+      "target": "./",
+      "include": [
+        "**/*"
+      ],
+      "exclude": [
+        "**/[Bb]in/**",
+        "**/[Oo]bj/**",
+        "**/.template.config/**",
+        "**/.idea/**",
+        "**/.git/**",
+        "**/[Bb]uild/**",
+        "**/node_modules/**",
+        "**/package-lock.json",
+        "**/*.filelist",
+        "**/*.user",
+        "**/*.lock.json",
+        "**/*.sln.DotSettings.user"
+      ],
+      "copyOnly": [
+      ]
+    }]
   }
