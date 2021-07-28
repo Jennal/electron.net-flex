@@ -64,7 +64,7 @@ namespace ElectronFlex
                 switch (pack.Type)
                 {
                     case PackType.InvokeCode:
-                        InvokeMethod(pack);
+                        InvokeFromBrowser(pack);
                         break;
                     case PackType.InvokeResult:
                         s_taskManager.Result(pack);
@@ -73,12 +73,14 @@ namespace ElectronFlex
             }
         }
 
-        private static void InvokeMethod(Pack pack)
+        private static void InvokeFromBrowser(Pack pack)
         {
             var invoke = JsonConvert.DeserializeObject<BrowserInvoke>(pack.Content);
             var (ns, _) = SplitNsClass(invoke.Class);
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            if (!string.IsNullOrEmpty(ns)) assemblies = assemblies.Where(o => o.GetName().Name.StartsWith(ns)).ToArray();
+            if (!string.IsNullOrEmpty(ns))
+                assemblies = assemblies.Where(o => o.GetName().Name.StartsWith(ns)).ToArray();
+            // else assemblies = new[] {typeof(BrowserInvoke).Assembly};
 
             foreach (var assembly in assemblies)
             {
