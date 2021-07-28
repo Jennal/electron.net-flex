@@ -20,6 +20,20 @@ All features mentioned above are still under construction.
 - [nodejs](https://nodejs.org/en/download/)
 - npm (included in nodejs)
 
+## How to Use
+
+Run following command in command line
+
+```
+dotnet new -i ./
+```
+
+Then you can use following command to create new project from this template
+
+```
+dotnet new electron-flex
+```
+
 ## License
 
 MIT-licensed
