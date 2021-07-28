@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageVersion>1.0</PackageVersion>
+    <PackageId>ElectronFlex.Project</PackageId>
+    <Title>Electron Flex Project Template</Title>
+    <Authors>Jennal</Authors>
+    <Description>Template to use when creating an application for Electron Flex.</Description>
+    <PackageTags>dotnet-new;templates;contoso</PackageTags>
+    <TargetFramework>net5.0</TargetFramework>
+
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="**\*" Exclude=".git\**;**\bin\**;**\obj\**;.idea\**;.template.config\**;build\**;**\node_modules\**;**\package-lock.json;*.DotSettings.user" />
+    <Compile Remove="**\*" />
+  </ItemGroup>
+
+</Project>
