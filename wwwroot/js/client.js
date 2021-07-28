@@ -410,8 +410,8 @@
         data.writeUint32(pack.Content.length);
         data.writeString(pack.Content);
 
-        console.log("send:", data);
-        ws.send(data.buffer);
+        // console.log("send:", data);
+        ws.send(data);
     }
 
     client.recv = function () {
