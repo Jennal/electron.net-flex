@@ -536,6 +536,10 @@
         });
     }
 
+    client.invokeNode = function(resultType, code) {
+        return client.invoke("ElectronFlex.NodeJs", "Invoke<" + resultType + ">", code);
+    }
+
     client = Emitter(client);
     client.pkg = pkg;
     client.events = events;

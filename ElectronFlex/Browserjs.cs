@@ -75,6 +75,17 @@ namespace ElectronFlex
 
         private static void InvokeFromBrowser(Pack pack)
         {
+            var result = DoInvoke(pack);
+            Send(new Pack
+            {
+                Id = pack.Id,
+                Type = PackType.InvokeResult,
+                Content = JsonConvert.SerializeObject(result)
+            });
+        }
+
+        public static object DoInvoke(Pack pack)
+        {
             var invoke = JsonConvert.DeserializeObject<BrowserInvoke>(pack.Content);
             var (ns, _) = SplitNsClass(invoke.Class);
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -89,21 +100,26 @@ namespace ElectronFlex
 
                 var method = type.GetMethod(invoke.Method, BindingFlags.Static | BindingFlags.Public, invoke.Arguments);
                 var result = method.Invoke(null, invoke.Arguments);
-                Send(new Pack
-                {
-                    Id = pack.Id,
-                    Type = PackType.InvokeResult,
-                    Content = JsonConvert.SerializeObject(result)
-                });
-                return;
+                result = UnPackResult(result);
+                return result;
             }
-            
-            Send(new Pack
-            {
-                Id = pack.Id,
-                Type = PackType.InvokeResult,
-                Content = InvokeError.Error(invoke, $"can't find method")
-            });
+
+            return new InvokeError(invoke, "can't find method");
+        }
+
+        public static object? UnPackResult(object? result)
+        {
+            if (result == null) return result;
+            var type = result.GetType();
+            if (type.Name != "Task" && !type.Name.StartsWith("Task`")) return result;
+
+            var method = type.GetMethod("Wait", BindingFlags.Instance| BindingFlags.Public, new object[0]);
+            method.Invoke(result, null);
+
+            var propertyInfo = type.GetProperty("Result");
+            if (propertyInfo == null) return null;
+
+            return propertyInfo.GetValue(result);
         }
 
         private static Tuple<string, string> SplitNsClass(string invokeClass)

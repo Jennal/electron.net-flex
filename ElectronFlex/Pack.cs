@@ -66,12 +66,15 @@ namespace ElectronFlex
         [JsonProperty("err")]
         public string Err;
 
+        public InvokeError(BrowserInvoke invoke, string error)
+        {
+            Source = JsonConvert.SerializeObject(invoke);
+            Err = error;
+        }
+        
         public static string Error(BrowserInvoke invoke, string error)
         {
-            var err = new InvokeError();
-            err.Source = JsonConvert.SerializeObject(invoke);
-            err.Err = error;
-
+            var err = new InvokeError(invoke, error);
             return JsonConvert.SerializeObject(err);
         }
     }
