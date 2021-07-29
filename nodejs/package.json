@@ -27,7 +27,10 @@
           "**/*"
         ]
       }
-    ]
+    ],
+    "electronDownload": {
+      "mirror": "https://npm.taobao.org/mirrors/electron/"
+    }
   },
   "dependencies": {
     "jest": "^27.0.6",
