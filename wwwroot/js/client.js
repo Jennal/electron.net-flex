@@ -536,8 +536,8 @@
         });
     }
 
-    client.invokeNode = function(code, resultType="object") {
-        return client.invoke("ElectronFlex.NodeJs", "Invoke<" + resultType + ">", code);
+    client.invokeNode = function(code, resultCsType="object") {
+        return client.invoke("ElectronFlex.NodeJs", "Invoke<" + resultCsType + ">", code);
     }
 
     client = Emitter(client);
