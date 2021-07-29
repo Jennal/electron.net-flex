@@ -9,6 +9,7 @@ namespace ElectronFlex
     {
         private static Dictionary<string, string> s_builtinTypeMap = new()
         {
+            {"object", "Object"},
             {"int", "Int32"},
             {"long", "Int64"},
             {"float", "Float"},
@@ -104,7 +105,8 @@ namespace ElectronFlex
                 {
                     if (genericTypes != null && genericTypes.Length > 0)
                     {
-                        return method.MakeGenericMethod(ToTypeArray(genericTypes));
+                        var types = ToTypeArray(genericTypes);
+                        return method.MakeGenericMethod(types);
                     }
                     
                     return method;

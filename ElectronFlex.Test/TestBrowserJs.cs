@@ -50,5 +50,19 @@ namespace ElectronFlex.Test
             });
             Assert.AreEqual(101, result);
         }
+        
+        [Test]
+        public void TestInvokeJs()
+        {
+            var result = BrowserJs.DoInvoke(new Pack
+            {
+                Content = JsonConvert.SerializeObject(new BrowserInvoke
+                {
+                    Class = "ElectronFlex.NodeJs",
+                    Method = "Invoke<object>",
+                    Arguments = new object[] {"console.log('hello')"}
+                })
+            });
+        }
     }
 }

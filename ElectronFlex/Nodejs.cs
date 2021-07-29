@@ -19,7 +19,7 @@ namespace ElectronFlex
         
         public static Task<T> Invoke<T>(string jsCode)
         {
-            if (!Config.CommandLineOptions.StartFromElectron)
+            if (!Config.CommandLineOptions?.StartFromElectron ?? true)
             {
                 Console.WriteLine($"[nodejs] {jsCode}");
                 return default;

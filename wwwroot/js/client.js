@@ -536,7 +536,7 @@
         });
     }
 
-    client.invokeNode = function(resultType, code) {
+    client.invokeNode = function(code, resultType="object") {
         return client.invoke("ElectronFlex.NodeJs", "Invoke<" + resultType + ">", code);
     }
 
