@@ -28,8 +28,7 @@ app.on('ready', async () => {
     });
 });
 
-function startServer() {
-    return new Promise(resolve => {
+async function startServer() {
         var srvPath = path.join(__dirname, "../ElectronFlex/bin/Debug/net5.0/ElectronFlex.exe");
         if (path.basename(app.getAppPath()) == 'app.asar') {
             srvPath = path.join(path.dirname(app.getPath('exe')), "bin/ElectronFlex.exe");
@@ -38,76 +37,53 @@ function startServer() {
         // Added default port as configurable for port restricted environments.
         let defaultElectronPort = 8000;
         // hostname needs to be localhost, otherwise Windows Firewall will be triggered.
-        portscanner.findAPortNotInUse(defaultElectronPort, 65535, 'localhost').then(function (webPort) {
-            console.log('Web Port: ' + webPort);
-            portscanner.findAPortNotInUse(webPort+1, 65535, 'localhost').then(function (wsPort) {
-                console.log('WS Port: ' + wsPort);
+        let webPort = await portscanner.findAPortNotInUse(defaultElectronPort, 65535, 'localhost');
+        console.log('Web Port: ' + webPort);
+        let wsPort = await portscanner.findAPortNotInUse(webPort+1, 65535, 'localhost');
+        console.log('WS Port: ' + wsPort);
                 
-                let child = spawn(srvPath, [
-                    "--electron",
-                    "--webport=" + webPort,
-                    "--wsport=" + wsPort
-                ]);
+        let child = spawn(srvPath, [
+            "--electron",
+            "--webport=" + webPort,
+            "--wsport=" + wsPort
+        ]);
+    
+        let buff = Buffer.alloc(128*1024); //128k
+    
+        // child.stdout.setEncoding('utf8');
+        child.stdout.on('data', data => {
+            // console.log('data', data, data.toString('utf8'));
+            buff = buff.writeBytes(data);
+            // console.log('buff', buff);
+    
+            var pack = NodePack.Decode(buff);
+            // console.log("pack", pack);
+            while (pack) {
+                switch (pack.Type) {
+                    case NodePackType.ConsoleOutput:
+                        console.log("CS WriteLine: " + pack.Content);
+                        break;
+                    case NodePackType.InvokeCode:
+                        console.log("CS Invoke: " + pack.Content);
+                        var result = eval(pack.Content);
+                        var json = JSON.stringify(result);
+                        json = json === undefined ? 'null' : json;
+                        console.log("Invoke Result: " + json);
+                        var retPack = new NodePack(pack.Id, NodePackType.InvokeResult, json);
             
-                let buff = Buffer.alloc(128*1024); //128k
-            
-                // child.stdout.setEncoding('utf8');
-                child.stdout.on('data', data => {
-                    // console.log('data', data, data.toString('utf8'));
-                    buff = buff.writeBytes(data);
-                    // console.log('buff', buff);
-            
-                    var pack = NodePack.Decode(buff);
-                    // console.log("pack", pack);
-                    while (pack) {
-                        switch (pack.Type) {
-                            case NodePackType.ConsoleOutput:
-                                console.log("CS WriteLine: " + pack.Content);
-                                break;
-                            case NodePackType.InvokeCode:
-                                console.log("CS Invoke: " + pack.Content);
-                                var result = eval(pack.Content);
-                                var json = JSON.stringify(result);
-                                json = json === undefined ? 'null' : json;
-                                console.log("Invoke Result: " + json);
-                                var retPack = new NodePack(pack.Id, NodePackType.InvokeResult, json);
-                    
-                                child.stdin.cork();
-                                child.stdin.write(retPack.Encode());
-                                child.stdin.uncork();
-                                break;
-                        }
-            
-                        pack = NodePack.Decode(buff);
-                        // console.log("pack", pack);
-                    }
-            
-                    // let lines = data.split("\n");
-                    // lines.forEach(line => {
-                    //     if (line == '') return;
-            
-                    //     if (line.startsWith("$$$")) {
-                    //         line = line.substring(3);
-                    //         console.log("cs eval: " + line);
-                    //         eval(line);
-                    //     }
-                    //     else
-                    //     {
-                    //         console.log("CS-OUT: " + line);
-                    //     } 
-                    // });
-                });
-            
-                // child.stdin.setEncoding('utf8');
-                // child.stdin.cork();
-                // child.stdin.write("Hello cs!\n");
-                // child.stdin.uncork();
-
-                resolve({
-                    "webPort": webPort,
-                    "wsPort": wsPort
-                });
-            });
+                        child.stdin.cork();
+                        child.stdin.write(retPack.Encode());
+                        child.stdin.uncork();
+                        break;
+                }
+    
+                pack = NodePack.Decode(buff);
+                // console.log("pack", pack);
+            }
         });
-    });
+
+        return {
+            "webPort": webPort,
+            "wsPort": wsPort
+        };
 }
